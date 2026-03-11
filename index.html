@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>問合せ・見積依頼 管理｜GOURIKI</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#0d0f14;--surface:#161920;--surface2:#1e2230;--border:#2a2f3f;--accent:#4f7cff;--accent2:#00c9a7;--accent3:#ff6b6b;--accent4:#ffd166;--text:#e8eaf2;--muted:#7a8099;--dim:#4a5168}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:13px;line-height:1.5;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* HEADER */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap}
+.h-title{font-size:14px;font-weight:700}
+.tag{background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px}
+.year-chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.h-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.month-tabs{display:flex;gap:2px}
+.mtab{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Noto Sans JP',sans-serif;transition:all .15s;white-space:nowrap}
+.mtab:hover{border-color:var(--accent);color:var(--accent)}
+.mtab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.mtab.y25.active{background:#6e56cf;border-color:#6e56cf}
+
+/* UPLOAD ZONE */
+.upload-zone{background:var(--surface);border:2px dashed var(--border);border-radius:8px;padding:12px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .2s;margin:0 4px}
+.upload-zone:hover{border-color:var(--accent);background:rgba(79,124,255,.05)}
+.upload-zone.drag{border-color:var(--accent2);background:rgba(0,201,167,.08)}
+.upload-zone label{cursor:pointer;font-size:11px;color:var(--muted)}
+.upload-zone .icon{font-size:18px}
+.upload-zone input{display:none}
+.upload-status{font-size:11px;color:var(--accent2);font-weight:600}
+
+/* TABS */
+.view-tabs{display:flex;gap:0;background:var(--surface2);border-radius:6px;padding:2px}
+.vtab{padding:5px 14px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:transparent;font-family:'Noto Sans JP',sans-serif;transition:all .15s}
+.vtab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:200px 1fr;height:calc(100vh - 57px)}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.sb-sec h3{font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:7px}
+
+/* KPI */
+.kpi-card{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:6px}
+.kpi-label{font-size:9px;color:var(--muted);margin-bottom:2px}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600}
+.kpi-value span{font-size:11px;font-weight:400;color:var(--muted)}
+.kpi-sub{font-size:9px;color:var(--muted);margin-top:2px}
+.prog-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:4px}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .3s}
+
+/* MONTHLY SUMMARY SIDEBAR */
+.month-summary-list{display:flex;flex-direction:column;gap:3px}
+.ms-row{display:flex;align-items:center;justify-content:space-between;padding:4px 7px;border-radius:4px;font-size:11px;cursor:pointer;transition:background .1s}
+.ms-row:hover{background:var(--surface2)}
+.ms-row.active{background:var(--surface2);border-left:2px solid var(--accent)}
+.ms-label{color:var(--muted);font-size:10px}
+.ms-cnt{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--text)}
+.ms-bar-wrap{height:3px;background:var(--border);border-radius:2px;flex:1;margin:0 8px}
+.ms-bar{height:100%;border-radius:2px;background:var(--accent)}
+
+/* FILTERS */
+.filter-group{display:flex;flex-direction:column;gap:2px}
+.fbtn{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;border-radius:4px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'Noto Sans JP',sans-serif;font-size:11px;text-align:left;transition:all .15s}
+.fbtn:hover{background:var(--surface2);color:var(--text)}
+.fbtn.active{background:var(--surface2);color:var(--text);border-left:2px solid var(--accent)}
+.fbtn .cnt{font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--bg);padding:0 5px;border-radius:8px;color:var(--muted)}
+.search-wrap{position:relative}
+.search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:6px 9px 6px 26px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:11px;outline:none;transition:border-color .15s}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap::before{content:'🔍';position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:10px;opacity:.4}
+
+/* MAIN */
+.main{overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tbar-title{font-size:16px;font-weight:700}
+.tbar-cnt{font-size:11px;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:10px}
+.tbar-right{margin-left:auto;display:flex;gap:6px}
+.btn{padding:5px 12px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Noto Sans JP',sans-serif;transition:all .15s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{opacity:.85;color:#fff}
+.btn.green{background:var(--accent2);border-color:var(--accent2);color:#000}
+
+/* TABLE */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface2)}
+thead th{padding:8px 11px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--muted)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+tbody tr.sel{background:rgba(79,124,255,.08)}
+td{padding:8px 11px;vertical-align:middle;font-size:12px}
+td.num-c{font-family:'IBM Plex Mono',monospace;color:var(--muted);font-size:11px;white-space:nowrap}
+.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700}
+.b-済{background:rgba(0,201,167,.15);color:#00c9a7}
+.b-pending{background:rgba(255,209,102,.15);color:#ffd166}
+.b-new{background:rgba(79,124,255,.15);color:#4f7cff}
+.p-chip{display:inline-block;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:500}
+.p0{background:rgba(255,107,107,.15);color:#ff6b6b}
+.p1{background:rgba(79,124,255,.15);color:#7fa3ff}
+.p2{background:rgba(0,201,167,.15);color:#00c9a7}
+.p3{background:rgba(255,209,102,.15);color:#ffd166}
+.p4{background:rgba(150,150,180,.15);color:#9696b4}
+.pref-c{display:inline-block;font-size:10px;padding:1px 5px;background:rgba(79,124,255,.08);border:1px solid rgba(79,124,255,.2);border-radius:3px;color:#7fa3ff;white-space:nowrap}
+.sd-c{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 5px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--muted)}
+.empty{text-align:center;padding:40px 20px;color:var(--dim)}
+
+/* SCHEDULE TABLE */
+.sch-type{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700}
+.s-理事会{background:rgba(79,124,255,.15);color:#7fa3ff}
+.s-総会{background:rgba(255,107,107,.15);color:#ff6b6b}
+.s-工事説明会{background:rgba(0,201,167,.15);color:#00c9a7}
+.s-住民説明会{background:rgba(255,209,102,.15);color:#ffd166}
+.s-other{background:rgba(150,150,180,.15);color:#9696b4}
+
+/* SUMMARY GRID */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:4px}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
+.sum-card-title{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.sum-big{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;color:var(--text)}
+.sum-big span{font-size:13px;color:var(--muted);font-weight:400}
+.sum-sub{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* DETAIL PANEL */
+.detail-panel{position:fixed;right:0;top:57px;bottom:0;width:320px;background:var(--surface);border-left:1px solid var(--border);padding:20px;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:50;overflow-y:auto}
+.detail-panel.open{transform:translateX(0)}
+.dp-close{position:absolute;top:12px;right:12px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:4px;padding:3px 9px;font-size:11px;font-family:'Noto Sans JP',sans-serif}
+.dp-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:4px}
+.dp-name{font-size:16px;font-weight:700;margin-bottom:3px;line-height:1.3}
+.dp-pref{font-size:11px;color:#7fa3ff;margin-bottom:10px}
+.dp-row{display:flex;align-items:baseline;gap:7px;padding:6px 0;border-bottom:1px solid var(--border)}
+.dp-row:last-child{border-bottom:none}
+.dp-key{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);width:55px;flex-shrink:0}
+.dp-val{color:var(--text);font-size:12px}
+.stat-btns{display:flex;gap:5px;margin-top:10px}
+.sbtn{flex:1;padding:6px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'Noto Sans JP',sans-serif;transition:all .15s}
+.sbtn.a-済{background:rgba(0,201,167,.2);border-color:#00c9a7;color:#00c9a7}
+.sbtn.a-対{background:rgba(255,209,102,.2);border-color:#ffd166;color:#ffd166}
+.notes-box{margin-top:12px;padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)}
+.notes-box label{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--dim);display:block;margin-bottom:6px;text-transform:uppercase}
+.notes-box textarea{width:100%;background:transparent;border:none;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:11px;resize:vertical;outline:none;min-height:70px}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center}
+.modal-ov.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;width:480px;max-width:95vw}
+.modal h2{font-size:14px;font-weight:700;margin-bottom:16px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg-item{display:flex;flex-direction:column;gap:3px}
+.fg-item.full{grid-column:span 2}
+.fg-item label{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.fg-item input,.fg-item select{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:12px;outline:none;transition:border-color .15s}
+.fg-item input:focus,.fg-item select:focus{border-color:var(--accent)}
+.fg-item select option{background:var(--surface2)}
+.mf{display:flex;justify-content:flex-end;gap:6px;margin-top:16px}
+
+.hp-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:5px;border-bottom:1px solid var(--border);font-size:12px}
+.hp-row:last-child{border-bottom:none}
+.hp-row:hover{background:var(--surface2)}
+.hp-tag{display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:700;background:rgba(255,209,102,.2);color:#ffd166;white-space:nowrap}
+
+/* ============================================================
+   モバイル対応
+   ============================================================ */
+@media (max-width: 768px) {
+  /* ヘッダー */
+  header{flex-wrap:wrap;gap:6px;padding:8px 10px}
+  .upload-zone{width:100%;order:3}
+  .h-right{width:100%;order:4;flex-direction:column;gap:6px;margin-left:0}
+  .view-tabs{width:100%}
+  .vtab{flex:1;font-size:11px;padding:6px 4px}
+  .month-tabs{width:100%;overflow-x:auto;padding-bottom:2px}
+  .mtab{font-size:10px;padding:4px 8px}
+  #hpBanner{width:100%;order:2}
+
+  /* レイアウト：サイドバーを非表示→ボトムシート風に */
+  .layout{grid-template-columns:1fr;height:auto}
+  .sidebar{display:none}
+
+  /* メイン */
+  .main{padding:10px;gap:10px}
+  .toolbar{flex-wrap:wrap;gap:6px}
+  .tbar-title{font-size:13px}
+  .tbar-right{width:100%;justify-content:flex-end}
+
+  /* テーブル：横スクロール */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:600px}
+  td,th{padding:6px 8px;font-size:11px}
+
+  /* サマリーグリッド */
+  .summary-grid{grid-template-columns:1fr 1fr}
+  .sum-big{font-size:22px}
+
+  /* 詳細パネル */
+  .detail-panel{width:100%;top:auto;bottom:0;height:70vh;transform:translateY(100%);border-radius:16px 16px 0 0;border-left:none;border-top:1px solid var(--border)}
+  .detail-panel.open{transform:translateY(0)}
+
+  /* モバイル用フィルターバー */
+  .mobile-filter-bar{display:flex;gap:6px;overflow-x:auto;padding:6px 0;-webkit-overflow-scrolling:touch}
+  .mobile-filter-bar .fbtn{white-space:nowrap;background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:4px 12px;font-size:11px;color:var(--muted);cursor:pointer;font-family:'Noto Sans JP',sans-serif;flex-shrink:0}
+  .mobile-filter-bar .fbtn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+}
+
+@media (min-width:769px){
+  .mobile-filter-bar{display:none}
+}
+
+/* ===== MOBILE / iPhone ===== */
+@media (max-width: 768px) {
+  header{padding:8px 10px;gap:6px;flex-wrap:wrap}
+  .h-title{font-size:13px}
+  #hpBanner{padding:5px 10px}
+  #hpBanner span[style*="font-size:20px"]{font-size:16px!important}
+  .h-right{width:100%;overflow-x:auto;padding-bottom:4px}
+  .view-tabs{flex-shrink:0}
+  .vtab{padding:4px 10px;font-size:11px}
+  .month-tabs{flex-shrink:0}
+  .mtab{padding:3px 8px;font-size:10px}
+  .upload-zone{padding:6px 10px}
+  .upload-zone label{font-size:10px}
+
+  /* サイドバーを上部に移動 */
+  .layout{
+    display:flex;
+    flex-direction:column;
+    height:auto;
+    min-height:calc(100vh - 100px);
+  }
+  .sidebar{
+    border-right:none;
+    border-bottom:1px solid var(--border);
+    padding:10px;
+    flex-direction:row;
+    flex-wrap:wrap;
+    gap:10px;
+    overflow-y:visible;
+  }
+  .sb-sec{min-width:140px;flex:1}
+  .sb-sec h3{margin-bottom:5px}
+  #monthSummarySection{display:none} /* スマホでは非表示 */
+  #kpiSection{min-width:100%;order:-1}
+  .kpi-card{padding:8px;margin-bottom:4px}
+  .kpi-value{font-size:16px}
+
+  /* メイン */
+  .main{padding:10px;gap:10px}
+  .toolbar{gap:6px}
+  .tbar-title{font-size:13px}
+  .tbar-right{gap:4px}
+  .btn{padding:4px 8px;font-size:10px}
+
+  /* テーブルをスクロール可能に */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:600px}
+  thead th{padding:6px 8px;font-size:8px}
+  td{padding:6px 8px;font-size:11px}
+  .sd-c{font-size:9px}
+  .badge{font-size:8px;padding:1px 5px}
+  .p-chip{font-size:10px;padding:1px 5px}
+  .pref-c{font-size:9px}
+
+  /* 詳細パネル */
+  .detail-panel{
+    top:auto;
+    bottom:0;
+    left:0;
+    right:0;
+    width:100%;
+    height:70vh;
+    transform:translateY(100%);
+    border-left:none;
+    border-top:1px solid var(--border);
+    border-radius:16px 16px 0 0;
+  }
+  .detail-panel.open{transform:translateY(0)}
+
+  /* モーダル */
+  .modal{width:95vw;padding:16px}
+  .fg{grid-template-columns:1fr}
+  .fg-item.full{grid-column:span 1}
+
+  /* サマリーグリッド */
+  .summary-grid{grid-template-columns:1fr 1fr}
+
+  /* HPバナー */
+  #hpCoins{display:none}
+}
+
+@media (max-width: 480px) {
+  .summary-grid{grid-template-columns:1fr}
+  .sidebar{flex-direction:column}
+  #personSec,#statusSec,#prefSec{display:none} /* 極小画面ではフィルター非表示 */
+}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="h-title">📋 問合せ・見積依頼</span>
+  <span class="tag">GOURIKI</span>
+  <span class="year-chip" id="yearChip">—</span>
+
+  <!-- EXCEL / 画像 UPLOAD -->
+  <div class="upload-zone" id="uploadZone">
+    <span class="icon">📊</span>
+    <label for="xlsxInput">Excel または 画像を読込
+      <input type="file" id="xlsxInput" accept=".xlsx,.xls,image/*" multiple>
+    </label>
+    <span class="upload-status" id="uploadStatus"></span>
+  </div>
+
+  <!-- HP問い合わせカウンター -->
+  <div id="hpBanner" style="display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(255,209,102,.15),rgba(255,107,107,.1));border:1px solid rgba(255,209,102,.4);border-radius:6px;padding:6px 14px;cursor:pointer" onclick="playCharin(1);showHpList()" title="HP問い合わせ案件を表示">
+    <span style="font-size:16px">💻</span>
+    <div>
+      <div style="font-size:9px;font-weight:700;letter-spacing:.1em;color:rgba(255,209,102,.8);text-transform:uppercase">HP問い合わせ（今月）</div>
+      <div style="display:flex;align-items:baseline;gap:4px">
+        <span id="hpCount" style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:#ffd166">—</span>
+        <span style="font-size:11px;color:rgba(255,209,102,.6)">件</span>
+        <span id="hpCoins" style="font-size:14px;margin-left:2px"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="h-right">
+    <div class="view-tabs">
+      <button class="vtab active" onclick="switchView('list')">物件リスト</button>
+      <button class="vtab" onclick="switchView('schedule')">理事会・総会</button>
+      <button class="vtab" onclick="switchView('summary')">月別サマリー</button>
+    </div>
+    <div class="month-tabs" id="monthTabs"></div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-sec">
+      <h3>検索</h3>
+      <div class="search-wrap"><input type="text" id="searchInput" placeholder="物件名・担当者・県名..."></div>
+    </div>
+
+    <div class="sb-sec" id="kpiSection">
+      <h3>集計</h3>
+      <div class="kpi-card">
+        <div class="kpi-label">総件数（当月）</div>
+        <div class="kpi-value" id="kpiTotal">—</div>
+        <div class="kpi-sub" id="kpiSub">—</div>
+        <div class="prog-bar"><div class="prog-fill" id="kpiProg" style="width:0%"></div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">理事会・総会（今後）</div>
+        <div class="kpi-value" id="kpiSch">—</div>
+      </div>
+    </div>
+
+    <div class="sb-sec" id="monthSummarySection">
+      <h3>月別件数</h3>
+      <div class="month-summary-list" id="monthSummaryList"></div>
+    </div>
+
+    <div class="sb-sec" id="personSec">
+      <h3>担当者</h3>
+      <div class="filter-group" id="personFilter"></div>
+    </div>
+    <div class="sb-sec" id="statusSec">
+      <h3>ステータス</h3>
+      <div class="filter-group" id="statusFilter"></div>
+    </div>
+    <div class="sb-sec" id="prefSec">
+      <h3>都道府県</h3>
+      <div class="filter-group" id="prefFilter"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="mainArea">
+  <!-- モバイル用フィルターバー -->
+  <div class="mobile-filter-bar" id="mobileFilterBar">
+    <button class="fbtn active" onclick="setMobileMonth(this,'3月')">3月</button>
+    <button class="fbtn" onclick="setMobileMonth(this,'2月')">2月</button>
+    <button class="fbtn" onclick="setMobileMonth(this,'11月')">11月</button>
+    <button class="fbtn" onclick="setMobileMonth(this,'10月')">10月</button>
+    <button class="fbtn" onclick="setMobileMonth(this,'6月')">6月</button>
+    <button class="fbtn" onclick="setMobileMonth(this,'5月')">5月</button>
+    <span style="flex-shrink:0;width:1px;background:var(--border);margin:0 4px"></span>
+    <button class="fbtn" id="mf-all" onclick="setMobilePerson(this,'ALL')">全員</button>
+    <button class="fbtn" id="mf-mor" onclick="setMobilePerson(this,'森下')">森下</button>
+    <button class="fbtn" id="mf-kob" onclick="setMobilePerson(this,'小林')">小林</button>
+    <button class="fbtn" id="mf-ino" onclick="setMobilePerson(this,'井上')">井上</button>
+    <button class="fbtn" id="mf-nak" onclick="setMobilePerson(this,'中村')">中村</button>
+  </div>
+    <!-- list view -->
+    <div id="viewList">
+      <div class="toolbar">
+        <span class="tbar-title" id="toolbarTitle">—</span>
+        <span class="tbar-cnt" id="toolbarCount"></span>
+        <div class="tbar-right">
+          <button class="btn green" onclick="exportXLSX()">📥 Excel出力</button>
+          <button class="btn primary" onclick="openModal()">＋ 新規追加</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th onclick="sortBy('num')">#</th>
+            <th onclick="sortBy('name')">物件名</th>
+            <th onclick="sortBy('prefecture')">都道府県</th>
+            <th>HP</th>
+            <th>再見積</th>
+            <th onclick="sortBy('client')">依頼元</th>
+            <th onclick="sortBy('sd')">SD</th>
+            <th onclick="sortBy('person')">担当</th>
+            <th onclick="sortBy('status')">状況</th>
+            <th>メモ</th>
+          </tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="empty" id="emptyMsg" style="display:none">📭 該当する案件がありません</div>
+      </div>
+    </div>
+
+    <!-- schedule view -->
+    <div id="viewSchedule" style="display:none">
+      <div class="toolbar">
+        <span class="tbar-title">理事会・総会スケジュール</span>
+        <span class="tbar-cnt" id="schCount"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>日付</th><th>物件名</th><th>時刻</th><th>種別</th><th>担当者</th><th>備考</th><th>SD</th>
+          </tr></thead>
+          <tbody id="schBody"></tbody>
+        </table>
+        <div class="empty" id="schEmpty" style="display:none">📭 スケジュールなし</div>
+      </div>
+    </div>
+
+    <!-- summary view -->
+    <div id="viewSummary" style="display:none">
+      <div class="toolbar">
+        <span class="tbar-title">月別 問合せ件数サマリー</span>
+      </div>
+      <div class="summary-grid" id="summaryCards"></div>
+      <div class="table-wrap" style="margin-top:12px">
+        <table>
+          <thead><tr>
+            <th>期</th><th>年</th><th>月</th><th>問合せ件数</th><th>理事会・総会</th><th>在庫KOBEMAG</th><th>在庫梨地</th><th>備考</th>
+          </tr></thead>
+          <tbody id="summaryBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel" id="detailPanel">
+  <button class="dp-close" onclick="closeDetail()">✕</button>
+  <div class="dp-meta" id="dMeta"></div>
+  <div class="dp-name" id="dName"></div>
+  <div class="dp-pref" id="dPref"></div>
+  <div class="stat-btns">
+    <button class="sbtn" onclick="setStatusBtn('対応中')" id="sBtn1">対応中</button>
+    <button class="sbtn" onclick="setStatusBtn('済')" id="sBtn2">済</button>
+  </div>
+  <div id="dRows" style="margin-top:12px"></div>
+  <div class="notes-box">
+    <label>メモ・備考</label>
+    <textarea id="dNotes" placeholder="メモを入力..."></textarea>
+    <button class="btn primary" style="margin-top:7px;width:100%" onclick="saveNote()">保存</button>
+  </div>
+</div>
+
+<!-- HP MODAL -->
+<div class="modal-ov" id="hpModalOv">
+  <div class="modal" style="width:580px">
+    <h2>💻 HP問い合わせ案件一覧</h2>
+    <div id="hpModalBody" style="max-height:400px;overflow-y:auto;margin-top:12px">
+    </div>
+    <div class="mf"><button class="btn" onclick="document.getElementById('hpModalOv').classList.remove('open')">閉じる</button></div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-ov" id="modalOv">
+  <div class="modal">
+    <h2>新規案件追加</h2>
+    <div class="fg">
+      <div class="fg-item full"><label>物件名</label><input id="fName" type="text" placeholder="物件名"></div>
+      <div class="fg-item"><label>年</label><select id="fYear"><option>2026</option><option>2025</option></select></div>
+      <div class="fg-item"><label>月</label><select id="fMonth"><option>3月</option><option>2月</option><option>1月</option><option>12月</option><option>11月</option><option>10月</option><option>9月</option><option>8月</option><option>7月</option><option>6月</option><option>5月</option><option>4月</option></select></div>
+      <div class="fg-item"><label>都道府県</label><input id="fPref" type="text" placeholder="東京都"></div>
+      <div class="fg-item"><label>担当者</label><select id="fPerson"><option>森下</option><option>小林</option><option>井上</option><option>中村</option><option>山中</option><option>久保</option></select></div>
+      <div class="fg-item"><label>依頼元</label><input id="fClient" type="text"></div>
+      <div class="fg-item"><label>SD台数</label><input id="fSd" type="text" placeholder="SD6"></div>
+      <div class="fg-item full"><label>ステータス</label><select id="fStatus"><option>新規</option><option>対応中</option><option>済</option></select></div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeModal()">キャンセル</button>
+      <button class="btn primary" onclick="addRecord()">追加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 月マッピング
+// ============================================================
+const MY = {'3月':2026,'2月':2026,'1月':2026,'12月':2025,'11月':2025,'10月':2025,'9月':2025,'8月':2025,'7月':2025,'6月':2025,'5月':2025,'4月':2025};
+const MONTH_ORDER = ['3月','2月','11月','10月','6月','5月'];
+
+// ============================================================
+// 物件データ（初期値 - Excelで上書き可能）
+// ============================================================
+let records = [
+// 2026年3月（最新 IMG_4362より）
+{id:1,year:2026,month:'3月',num:1,name:'ポレスター岡谷',prefecture:'長野県',client:'大和ライフネクスト',sd:'SD6',person:'小林',saiken:false,status:'済',note:'3/1'},
+{id:2,year:2026,month:'3月',num:2,name:'フォレスト見晴坂',prefecture:'東京都',client:'管理組合',sd:'SD4',person:'森下',saiken:true,status:'済',note:'3/1'},
+{id:3,year:2026,month:'3月',num:3,name:'グローバル・ザ・スイート横浜コアンス',prefecture:'神奈川県',client:'サルーテ KIT',sd:'SD2',person:'森下',saiken:false,status:'対応中',note:'3/2 新品'},
+{id:4,year:2026,month:'3月',num:4,name:'幕張テクニカルセンター',prefecture:'千葉県',client:'JLL',sd:'SD14or29or3X',person:'井上',saiken:true,status:'済',note:'3/3'},
+{id:5,year:2026,month:'3月',num:5,name:'レクセルガーデン昭島',prefecture:'東京都',client:'岩波 KIT',sd:'SD13',person:'森下',saiken:false,status:'対応中',note:'3/5'},
+{id:6,year:2026,month:'3月',num:6,name:'ランドシティ新所沢',prefecture:'埼玉県',client:'東急コミュニティー',sd:'解体撤設',person:'小林',saiken:false,status:'対応中',note:'3/5'},
+{id:7,year:2026,month:'3月',num:7,name:'セザール第二川崎大師',prefecture:'神奈川県',client:'穴吹ハウジング',sd:'SD8',person:'森下',saiken:true,status:'済',note:'3/5'},
+{id:8,year:2026,month:'3月',num:8,name:'サンヴェール住道',prefecture:'大阪府',client:'新栄 KIT',sd:'SD46',person:'中村',saiken:false,status:'済',note:'3/5'},
+{id:9,year:2026,month:'3月',num:9,name:'グランドメゾン三軒茶屋の杜',prefecture:'東京都',client:'積水パートナーズGM',sd:'SD6',person:'井上',saiken:true,status:'済',note:'3/5'},
+{id:10,year:2026,month:'3月',num:10,name:'ダイアパレス福島町',prefecture:'大阪府',client:'葛飾Grage',sd:'SD22',person:'森下',saiken:false,status:'対応中',note:'3/5'},
+{id:11,year:2026,month:'3月',num:11,name:'イーストコート8番街',prefecture:'神奈川県',client:'HP:スリーエース',sd:'SD5',person:'森下',saiken:false,status:'済',note:'3/6'},
+{id:12,year:2026,month:'3月',num:12,name:'ウィン麻布十番ハウビル',prefecture:'東京都',client:'HP:オーナー',sd:'SD2or3',person:'井上',saiken:false,status:'済',note:'3/6'},
+{id:13,year:2026,month:'3月',num:13,name:'アーデル三ノ輪サウスフォート',prefecture:'東京都',client:'HP:日本ハウズイング',sd:'SD3',person:'小林',saiken:false,status:'対応中',note:'3/7'},
+{id:14,year:2026,month:'3月',num:14,name:'パテラスクエア昭島',prefecture:'東京都',client:'HP:東急コミュニティー',sd:'SD2',person:'小林',saiken:false,status:'対応中',note:'3/9'},
+{id:15,year:2026,month:'3月',num:15,name:'ブランズ石立',prefecture:'',client:'東急コミュニティー',sd:'SD3',person:'小林',saiken:false,status:'対応中',note:'3/9'},
+{id:16,year:2026,month:'3月',num:16,name:'タワーア・ラ・モード',prefecture:'',client:'新栄 KIT',sd:'SD27',person:'中村',saiken:false,status:'済',note:'3/9'},
+{id:17,year:2026,month:'3月',num:17,name:'桶川ローヤルコーポ',prefecture:'埼玉県',client:'東急コミュニティー',sd:'SD4',person:'小林',saiken:false,status:'対応中',note:'3/9'},
+{id:18,year:2026,month:'3月',num:18,name:'ダイアパレス鶴谷南',prefecture:'',client:'HP:東急コミュニティー',sd:'SD3',person:'井上',saiken:false,status:'対応中',note:'3/9'},
+{id:19,year:2026,month:'3月',num:19,name:'ネオステージ北習志野',prefecture:'千葉県',client:'日本ハウジング',sd:'SD26',person:'井上',saiken:false,status:'対応中',note:'3/10'},
+{id:20,year:2026,month:'3月',num:20,name:'宮前平ガーデンハウス',prefecture:'神奈川県',client:'パーキングマーケット',sd:'SD3',person:'井上',saiken:false,status:'対応中',note:'3/10'},
+{id:21,year:2026,month:'3月',num:21,name:'トミンハイム国分寺泉町',prefecture:'東京都',client:'HP:三協技術',sd:'SD?',person:'森下',saiken:false,status:'対応中',note:'3/10 入札案件'},
+{id:101,year:2026,month:'2月',num:22,name:'ルイシャトレ城東関日',prefecture:'大阪府',client:'長谷工コミュニティ',sd:'SD11',person:'中村',saiken:true,status:'済',note:''},
+{id:102,year:2026,month:'2月',num:23,name:'グレンツエルトハイム相模大野',prefecture:'神奈川県',client:'アークホームズ(再)',sd:'SD10',person:'森下',saiken:true,status:'済',note:''},
+{id:103,year:2026,month:'2月',num:24,name:'ウェルフェア3ステージ大井二葉',prefecture:'東京都',client:'グローブシップ',sd:'SDK',person:'井上',saiken:false,status:'済',note:''},
+{id:104,year:2026,month:'2月',num:25,name:'アーデル川口レダリエ2期',prefecture:'埼玉県',client:'クローバーコミュニティ',sd:'SD3',person:'井上',saiken:false,status:'済',note:''},
+{id:105,year:2026,month:'2月',num:26,name:'代官山アドレス',prefecture:'東京都',client:'葛飾',sd:'SD10',person:'森下',saiken:true,status:'済',note:''},
+{id:106,year:2026,month:'2月',num:27,name:'東急ドエル・アルス柏江',prefecture:'千葉県',client:'東急コミュニティー',sd:'SD',person:'小林',saiken:false,status:'済',note:''},
+{id:107,year:2026,month:'2月',num:28,name:'よこすか海辺ニュータウン',prefecture:'神奈川県',client:'ライフポート西洋',sd:'SD20',person:'森下',saiken:true,status:'済',note:''},
+{id:108,year:2026,month:'2月',num:29,name:'パークハウス四番町(KIT)',prefecture:'東京都',client:'サルーテ',sd:'SD2',person:'森下',saiken:false,status:'済',note:''},
+{id:109,year:2026,month:'2月',num:30,name:'ルイシャトレ高槻',prefecture:'大阪府',client:'長谷工コミュニティ',sd:'SD',person:'中村',saiken:true,status:'済',note:''},
+{id:110,year:2026,month:'2月',num:31,name:'ディオフォルティ丹波左若館',prefecture:'兵庫県',client:'長谷工コミュニティ',sd:'SD',person:'中村',saiken:true,status:'済',note:''},
+{id:111,year:2026,month:'2月',num:11,name:'OAP3号',prefecture:'大阪府',client:'三菱地所',sd:'SD4',person:'中村',saiken:true,status:'済',note:''},
+{id:112,year:2026,month:'2月',num:12,name:'プラウディア五月台Ⅲ',prefecture:'神奈川県',client:'組合',sd:'SD8',person:'森下',saiken:true,status:'済',note:''},
+{id:113,year:2026,month:'2月',num:13,name:'ファミールプランシェ経堂',prefecture:'東京都',client:'三菱地所',sd:'SD4',person:'小林',saiken:false,status:'済',note:''},
+{id:114,year:2026,month:'2月',num:14,name:'プリンスハイツ市ヶ谷',prefecture:'東京都',client:'王子不動産',sd:'SD1',person:'森下',saiken:false,status:'済',note:''},
+{id:115,year:2026,month:'2月',num:15,name:'オーチャードプラザ',prefecture:'',client:'ナイスコミュニティ',sd:'SD12',person:'森下',saiken:false,status:'済',note:''},
+{id:116,year:2026,month:'2月',num:16,name:'フォルム緑丘・大阪',prefecture:'大阪府',client:'HP:管理組合',sd:'SD',person:'森下',saiken:true,status:'済',note:''},
+{id:117,year:2026,month:'2月',num:17,name:'ピクセル伊勢佐木町',prefecture:'神奈川県',client:'HP:純粋（オーナー）',sd:'SD9',person:'井上',saiken:true,status:'済',note:''},
+{id:118,year:2026,month:'2月',num:18,name:'グランウェリス哲学堂公園',prefecture:'東京都',client:'HP:管理組合',sd:'SD/3',person:'小林',saiken:false,status:'済',note:''},
+{id:119,year:2026,month:'2月',num:19,name:'ポレスターステーションシティ小松',prefecture:'石川県',client:'HP:大和ライブリング',sd:'SD27',person:'小林',saiken:false,status:'済',note:''},
+{id:120,year:2026,month:'2月',num:20,name:'モアクレスト相模原',prefecture:'神奈川県',client:'ライフポート西洋',sd:'SD6',person:'森下',saiken:true,status:'済',note:''},
+{id:121,year:2026,month:'2月',num:21,name:'クレストコート上尾',prefecture:'埼玉県',client:'東急コミュニティー',sd:'SD11+外構',person:'小林',saiken:false,status:'済',note:''},
+{id:201,year:2025,month:'11月',num:1,name:'エドコモン西早稲田',prefecture:'東京都',client:'Tel',sd:'3台',person:'井上',saiken:false,status:'済',note:'11/8'},
+{id:202,year:2025,month:'11月',num:2,name:'ライオンズマンション東船橋',prefecture:'千葉県',client:'Tel',sd:'5台',person:'小林',saiken:false,status:'済',note:'11/8'},
+{id:203,year:2025,month:'11月',num:3,name:'リプレ川口5工区',prefecture:'埼玉県',client:'メール',sd:'SD9台',person:'井上',saiken:false,status:'済',note:'11/14'},
+{id:204,year:2025,month:'11月',num:4,name:'グルスコート船橋',prefecture:'千葉県',client:'メール',sd:'12台',person:'小林',saiken:false,status:'済',note:'11/14'},
+{id:205,year:2025,month:'11月',num:5,name:'サーパス藤坂',prefecture:'',client:'HP:',sd:'8台',person:'小林',saiken:false,status:'済',note:''},
+{id:206,year:2025,month:'11月',num:6,name:'ライオンズヒルズ吉前平',prefecture:'',client:'メール',sd:'2台',person:'井上',saiken:false,status:'済',note:'11/15'},
+{id:207,year:2025,month:'11月',num:7,name:'藤和碑文谷ホームズ',prefecture:'東京都',client:'メール',sd:'4台',person:'小林',saiken:false,status:'済',note:'11/18'},
+{id:208,year:2025,month:'11月',num:8,name:'ソフィア日比野',prefecture:'愛知県',client:'メール',sd:'4台',person:'井上',saiken:false,status:'済',note:''},
+{id:209,year:2025,month:'11月',num:9,name:'コスモ宮崎台グランデュール',prefecture:'神奈川県',client:'',sd:'4台',person:'小林',saiken:false,status:'済',note:''},
+{id:210,year:2025,month:'11月',num:10,name:'エヴァーグリーン船橋',prefecture:'千葉県',client:'メール',sd:'3台',person:'井上',saiken:false,status:'済',note:'11/19'},
+{id:211,year:2025,month:'11月',num:11,name:'アクトビア北市羽6番館',prefecture:'東京都',client:'Tel',sd:'20台',person:'小林',saiken:false,status:'済',note:''},
+{id:212,year:2025,month:'11月',num:12,name:'シークレア茨木様通り',prefecture:'大阪府',client:'パーキングマーケット',sd:'0台',person:'小林',saiken:false,status:'済',note:''},
+{id:213,year:2025,month:'11月',num:13,name:'ルネ神戸住吉り清流の道',prefecture:'兵庫県',client:'パーキングマーケット',sd:'',person:'井上',saiken:false,status:'済',note:''},
+{id:214,year:2025,month:'11月',num:14,name:'朝日パリオ夜橋富士見台',prefecture:'東京都',client:'Tel',sd:'14台',person:'井上',saiken:false,status:'済',note:'現調11/28'},
+{id:215,year:2025,month:'11月',num:15,name:'藤和シティホームズ横浜台東',prefecture:'神奈川県',client:'メール',sd:'4台',person:'小林',saiken:false,status:'済',note:'11/22'},
+{id:216,year:2025,month:'11月',num:16,name:'マイキャッスル志村坂上',prefecture:'東京都',client:'メール',sd:'4台',person:'井上',saiken:true,status:'済',note:'11/21'},
+{id:217,year:2025,month:'11月',num:17,name:'行徳ガーデンシティ',prefecture:'千葉県',client:'メール',sd:'舗設',person:'井上',saiken:true,status:'済',note:''},
+{id:218,year:2025,month:'11月',num:18,name:'ブリリアエルシオ茨山',prefecture:'',client:'メール',sd:'22台',person:'小林',saiken:false,status:'済',note:''},
+{id:219,year:2025,month:'11月',num:19,name:'公園通り弐番館',prefecture:'',client:'メール',sd:'2台',person:'井上',saiken:false,status:'済',note:''},
+{id:220,year:2025,month:'11月',num:20,name:'小松川団地三番館ルネロ',prefecture:'東京都',client:'',sd:'',person:'井上',saiken:false,status:'済',note:'理調11/25'},
+{id:221,year:2025,month:'11月',num:21,name:'八郎右衛問臨時駐車場',prefecture:'',client:'',sd:'11台',person:'',saiken:false,status:'済',note:''},
+{id:301,year:2025,month:'10月',num:22,name:'朝日シティパリオ王子神谷',prefecture:'東京都',client:'朝日管理',sd:'SD4',person:'井上',saiken:false,status:'済',note:''},
+{id:302,year:2025,month:'10月',num:23,name:'三郊ガーデンハウス',prefecture:'東京都',client:'東京建物',sd:'SD6+外構',person:'森下',saiken:true,status:'済',note:''},
+{id:303,year:2025,month:'10月',num:24,name:'エンゼルハイム志村坂上',prefecture:'東京都',client:'マイムコミュニティ',sd:'解体のみ',person:'小林',saiken:false,status:'済',note:''},
+{id:304,year:2025,month:'10月',num:25,name:'東急ドエル・アレス大島',prefecture:'東京都',client:'東急コミュニティー',sd:'SD4',person:'森下',saiken:false,status:'済',note:''},
+{id:305,year:2025,month:'10月',num:26,name:'ヴィルヌーブ阿波座',prefecture:'大阪府',client:'パーキングマーケット',sd:'SD6',person:'森下',saiken:false,status:'済',note:''},
+{id:306,year:2025,month:'10月',num:27,name:'ビアネス大森山王三丁目',prefecture:'東京都',client:'パーキングマーケット',sd:'解体のみ',person:'井上',saiken:false,status:'済',note:''},
+{id:307,year:2025,month:'10月',num:28,name:'シャルマンコーポ桜井Ⅱ',prefecture:'大阪府',client:'パークウェイドオフィス',sd:'SD8〜24',person:'小林',saiken:true,status:'済',note:''},
+{id:308,year:2025,month:'10月',num:29,name:'グランシア宮の森ハイライズ',prefecture:'北海道',client:'葛飾GRAGE',sd:'SD3 KIT',person:'森下',saiken:true,status:'済',note:''},
+{id:309,year:2025,month:'10月',num:30,name:'ヴィトレーナ湘南海岸',prefecture:'神奈川県',client:'大知地所コミュニティライフ',sd:'解体のみ',person:'小林',saiken:false,status:'済',note:''},
+{id:310,year:2025,month:'10月',num:31,name:'パティオス5番街',prefecture:'千葉県',client:'野村不動産',sd:'',person:'小林',saiken:false,status:'済',note:''},
+{id:311,year:2025,month:'10月',num:32,name:'ウィルコート鴫野',prefecture:'大阪府',client:'新栄',sd:'SD44 KIT',person:'森下',saiken:false,status:'済',note:''},
+{id:312,year:2025,month:'10月',num:33,name:'ドゥーエ西大島Ⅱ',prefecture:'東京都',client:'新栄',sd:'SP8 KIT',person:'森下',saiken:false,status:'済',note:''},
+{id:313,year:2025,month:'10月',num:34,name:'ドゥーエ横浜都筑',prefecture:'神奈川県',client:'新栄',sd:'SD5 KIT',person:'森下',saiken:false,status:'済',note:''},
+{id:314,year:2025,month:'10月',num:35,name:'神戸海岸通ハーバーフラッツウェスト',prefecture:'兵庫県',client:'管理組合(HP)',sd:'SP43',person:'小林',saiken:false,status:'済',note:''},
+{id:315,year:2025,month:'10月',num:36,name:'雪ヶ谷大場の案件',prefecture:'東京都',client:'TerraChange',sd:'SD?',person:'森下',saiken:false,status:'済',note:''},
+{id:316,year:2025,month:'10月',num:37,name:'ハイネス住吉江公園',prefecture:'大阪府',client:'パーキングマーケット',sd:'SD4',person:'森下',saiken:false,status:'済',note:''},
+{id:317,year:2025,month:'10月',num:38,name:'エスポアール瑞江',prefecture:'東京都',client:'アシスト(HP)',sd:'SD?',person:'小林',saiken:false,status:'済',note:''},
+{id:318,year:2025,month:'10月',num:39,name:'ライオンズ宮前平第2',prefecture:'神奈川県',client:'大京3ステージ',sd:'SD2〜x',person:'井上',saiken:true,status:'済',note:''},
+{id:319,year:2025,month:'10月',num:40,name:'大森パークホームズグリーンマーコート',prefecture:'東京都',client:'組合',sd:'SD4',person:'小林',saiken:false,status:'済',note:''},
+{id:320,year:2025,month:'10月',num:41,name:'アーデル川口レヴァリエ',prefecture:'埼玉県',client:'クローバーコミュニティ',sd:'SD3',person:'井上',saiken:false,status:'済',note:''},
+{id:321,year:2025,month:'10月',num:42,name:'3ネージュ上木戸',prefecture:'',client:'長谷工コミュニティ',sd:'提出戻し27.5分',person:'井上',saiken:true,status:'済',note:''},
+{id:322,year:2025,month:'10月',num:43,name:'パークホームズ浦和青町サウスレジデンス',prefecture:'埼玉県',client:'',sd:'SD4',person:'森下',saiken:true,status:'済',note:''},
+{id:323,year:2025,month:'10月',num:44,name:'宮崎サンパーク蔵原タワー',prefecture:'宮崎県',client:'長谷工リフォーム',sd:'SD12',person:'森下',saiken:false,status:'済',note:''},
+{id:324,year:2025,month:'10月',num:45,name:'シャリエ亀戸壱番館',prefecture:'東京都',client:'パーキングマーケット',sd:'SD3',person:'森下',saiken:true,status:'済',note:''},
+{id:325,year:2025,month:'10月',num:46,name:'フォーリアグレイス三ツ産橋杵子通り',prefecture:'',client:'グローバルハート',sd:'',person:'小林',saiken:false,status:'済',note:''},
+{id:326,year:2025,month:'10月',num:47,name:'そんぽの家S京老市ぶたがる',prefecture:'',client:'APリベレーションズ',sd:'解体',person:'森下',saiken:true,status:'済',note:''},
+{id:327,year:2025,month:'10月',num:48,name:'そんぽの家 武庫川',prefecture:'兵庫県',client:'APリベレーションズ',sd:'SD7',person:'森下',saiken:true,status:'済',note:''},
+{id:328,year:2025,month:'10月',num:49,name:'ウィローズ中村橋',prefecture:'東京都',client:'グローバルハート',sd:'解体',person:'小林',saiken:false,status:'済',note:''},
+{id:329,year:2025,month:'10月',num:50,name:'グラン・コート湘南茅ヶ崎',prefecture:'神奈川県',client:'HESTAオークラ',sd:'SD19',person:'森下',saiken:false,status:'済',note:''},
+{id:330,year:2025,month:'10月',num:51,name:'イガストクゆらまち',prefecture:'',client:'山下設計',sd:'SD6',person:'井上',saiken:false,status:'済',note:''},
+{id:401,year:2025,month:'6月',num:22,name:'西神中央シティヒルズ（主体）',prefecture:'兵庫県',client:'新栄(キット)',sd:'SD40',person:'森下',saiken:false,status:'済',note:''},
+{id:402,year:2025,month:'6月',num:23,name:'シティハウス宮の森2棟',prefecture:'北海道',client:'組合',sd:'SD3',person:'小林',saiken:false,status:'済',note:''},
+{id:403,year:2025,month:'6月',num:24,name:'サンヴェールひばりヶ丘2期',prefecture:'東京都',client:'サノヤス',sd:'SD5',person:'森下',saiken:true,status:'済',note:''},
+{id:404,year:2025,month:'6月',num:25,name:'メゾンエクレレ志村3丁目',prefecture:'東京都',client:'サノヤス',sd:'SD5',person:'森下',saiken:true,status:'済',note:''},
+{id:405,year:2025,month:'6月',num:26,name:'調布の森ハイム',prefecture:'東京都',client:'パーキングマーケット',sd:'SD13',person:'井上',saiken:true,status:'済',note:''},
+{id:406,year:2025,month:'6月',num:27,name:'サンマンションアトレ東向日',prefecture:'京都府',client:'パーキングエイド',sd:'SD24',person:'小林',saiken:false,status:'済',note:''},
+{id:407,year:2025,month:'6月',num:28,name:'The Tokyo Towers',prefecture:'東京都',client:'住商建物',sd:'泡消火',person:'小林',saiken:false,status:'済',note:''},
+{id:408,year:2025,month:'6月',num:29,name:'フィーリア上尾',prefecture:'埼玉県',client:'ホゼン',sd:'外構のみ',person:'井上',saiken:false,status:'済',note:''},
+{id:409,year:2025,month:'6月',num:30,name:'キングマンションエストアージュ天王寺',prefecture:'大阪府',client:'パーキングマーケット',sd:'SD3',person:'井上',saiken:false,status:'済',note:''},
+{id:410,year:2025,month:'6月',num:31,name:'コート・セクィール',prefecture:'東京都',client:'東京建物3ステ',sd:'SD1',person:'井上',saiken:false,status:'済',note:''},
+{id:411,year:2025,month:'6月',num:32,name:'稲城市案件',prefecture:'東京都',client:'ハウスリンク',sd:'SD?',person:'森下',saiken:false,status:'済',note:''},
+{id:412,year:2025,month:'6月',num:33,name:'ロイヤル西宮セレーノ',prefecture:'兵庫県',client:'新栄',sd:'SD8 キット',person:'森下',saiken:false,status:'済',note:''},
+{id:413,year:2025,month:'6月',num:34,name:'グランヒルズ千葉春日',prefecture:'千葉県',client:'パーキングラボ',sd:'SD6',person:'森下',saiken:false,status:'済',note:''},
+{id:414,year:2025,month:'6月',num:14,name:'ダイアパレスパークデュオ上石神井',prefecture:'東京都',client:'パーキングマーケット',sd:'SD11',person:'井上',saiken:false,status:'済',note:''},
+{id:415,year:2025,month:'6月',num:15,name:'ヴィークステージ上七住イーストレジデンス',prefecture:'東京都',client:'清水総合開発',sd:'SD3',person:'井上',saiken:false,status:'済',note:''},
+{id:416,year:2025,month:'6月',num:16,name:'柳原大森ビル',prefecture:'東京都',client:'東京不動産管理株式会社',sd:'TT解体・創設',person:'小林',saiken:false,status:'済',note:''},
+{id:417,year:2025,month:'6月',num:17,name:'スティッツ西宮甲東園',prefecture:'兵庫県',client:'パーキングマーケット',sd:'SD10',person:'小林',saiken:false,status:'済',note:''},
+{id:418,year:2025,month:'6月',num:18,name:'ヴェラハイツ亀戸参番館',prefecture:'東京都',client:'セイワパーク',sd:'SD3',person:'小林',saiken:true,status:'済',note:''},
+{id:419,year:2025,month:'6月',num:19,name:'クレアホームズ相の葉',prefecture:'千葉県',client:'サノヤス',sd:'SD5',person:'森下',saiken:true,status:'済',note:''},
+{id:420,year:2025,month:'6月',num:20,name:'ルネ御園プラザ',prefecture:'',client:'サノヤス',sd:'SD18',person:'森下',saiken:true,status:'済',note:''},
+{id:421,year:2025,month:'6月',num:21,name:'NICE URBAN 国立',prefecture:'東京都',client:'ナイスコミュニティ',sd:'SD3',person:'小林',saiken:false,status:'済',note:''},
+{id:501,year:2025,month:'5月',num:1,name:'スティーレ グランシエロ',prefecture:'',client:'レーベンコミュニティ',sd:'5台→2台',person:'小林',saiken:false,status:'済',note:''},
+{id:502,year:2025,month:'5月',num:2,name:'パークコート防ウエスト',prefecture:'',client:'ホゼン',sd:'うめどし',person:'森下',saiken:false,status:'済',note:''},
+{id:503,year:2025,month:'5月',num:3,name:'エンゼルハイム十日市場',prefecture:'神奈川県',client:'フジパスク',sd:'SD7',person:'森下',saiken:false,status:'済',note:''},
+{id:504,year:2025,month:'5月',num:4,name:'レクセルマンションふきオ野',prefecture:'',client:'ディ・エム・シー',sd:'SD2',person:'小林',saiken:false,status:'済',note:''},
+{id:505,year:2025,month:'5月',num:5,name:'エミネンスパークヒルズ鷹見',prefecture:'',client:'三菱地所コミュニティ',sd:'SD4',person:'森下',saiken:false,status:'済',note:''},
+{id:506,year:2025,month:'5月',num:6,name:'ファミール西神戸',prefecture:'兵庫県',client:'三菱地所コミュニティ',sd:'SD54(2022)',person:'森下',saiken:false,status:'済',note:''},
+{id:507,year:2025,month:'5月',num:7,name:'パルコートグランオアシス2期',prefecture:'',client:'長谷工コミュニティ',sd:'SD1',person:'中村',saiken:false,status:'済',note:''},
+{id:508,year:2025,month:'5月',num:8,name:'ルフォンゼ団地合2棟',prefecture:'',client:'サンライズルマネジメント',sd:'SD3',person:'井上',saiken:false,status:'済',note:''},
+{id:509,year:2025,month:'5月',num:9,name:'アンビシャス船合',prefecture:'',client:'ディ・エム・シー',sd:'SD10',person:'小林',saiken:false,status:'済',note:''},
+{id:510,year:2025,month:'5月',num:10,name:'ブランズ三子多川（HP含）',prefecture:'',client:'MTK',sd:'SD5',person:'小林',saiken:false,status:'済',note:''},
+{id:511,year:2025,month:'5月',num:11,name:'パークハイム青葉台市',prefecture:'神奈川県',client:'三菱不動産',sd:'SD6',person:'井上',saiken:false,status:'済',note:''},
+{id:512,year:2025,month:'5月',num:12,name:'クレッセント新丸子3',prefecture:'神奈川県',client:'ゴールルームズマネイメント',sd:'SD4',person:'井上',saiken:true,status:'済',note:''},
+{id:513,year:2025,month:'5月',num:13,name:'ドラゴンマンション川越富士館',prefecture:'埼玉県',client:'パーキングマーケット',sd:'SD28',person:'井上',saiken:false,status:'済',note:''},
+{id:514,year:2025,month:'5月',num:14,name:'パークヒルズ円山（北海道）',prefecture:'北海道',client:'パーキングマーケット',sd:'SD10',person:'井上',saiken:false,status:'済',note:''},
+{id:515,year:2025,month:'5月',num:15,name:'コスモときわ台パークフォルム',prefecture:'東京都',client:'三菱地所コミュニティ',sd:'SD4',person:'森下',saiken:false,status:'済',note:''},
+{id:516,year:2025,month:'5月',num:16,name:'パーク・ハイム新町三ノ目',prefecture:'',client:'フジパスク',sd:'SD4',person:'森下',saiken:true,status:'済',note:''},
+{id:517,year:2025,month:'5月',num:17,name:'サンライフ門司港',prefecture:'福岡県',client:'E&L',sd:'SD4',person:'中村',saiken:false,status:'済',note:''},
+{id:518,year:2025,month:'5月',num:18,name:'ノートレーダ大岡山シティハウス',prefecture:'東京都',client:'組合',sd:'SD5',person:'小林',saiken:false,status:'済',note:''},
+{id:519,year:2025,month:'5月',num:19,name:'3ネージュ上木戸',prefecture:'',client:'長谷工コミュニティ',sd:'SD27',person:'井上',saiken:true,status:'済',note:''},
+{id:520,year:2025,month:'5月',num:20,name:'プレザンス新栄リミックス',prefecture:'愛知県',client:'新栄',sd:'SD2',person:'中村',saiken:false,status:'済',note:''},
+{id:521,year:2025,month:'5月',num:21,name:'レーベンリヴァーレ浦和美園アゼール',prefecture:'埼玉県',client:'かがわCO.',sd:'SD5',person:'森下',saiken:false,status:'済',note:''},
+];
+
+// ============================================================
+// 理事会・総会スケジュール
+// ============================================================
+let schedules = [
+{date:'2026/3/15(日)',name:'ファミール新小岩リバージュ',time:'15:00〜',type:'理事会',person:'森下',note:'',sd:''},
+{date:'2026/3/22(日)',name:'ライオンズマンション修学院',time:'13:00〜',type:'住民総会',person:'小林',note:'',sd:''},
+{date:'2026/3/29(日)',name:'ウィルローズ和光',time:'10:00〜',type:'理事会',person:'小林',note:'',sd:''},
+{date:'2026/3/21(日)',name:'ライオンズマンション多摩川清の丘',time:'18:00〜',type:'総会',person:'井上',note:'',sd:''},
+{date:'2026/4/19(日)',name:'フェイム本郷台南',time:'',type:'総会',person:'小林',note:'',sd:''},
+{date:'2026/4/13(日)',name:'ファミール新小岩リバージュ',time:'',type:'理事会',person:'山崎・森下',note:'',sd:''},
+{date:'2026/4/13(日)',name:'D-タリーパレス千葉パークサイドテルズ',time:'10:00〜',type:'懇親総会',person:'森山',note:'',sd:'SD相場'},
+{date:'2026/4/6(日)',name:'クレストフォルム横浜',time:'10:00〜',type:'理事会',person:'井上',note:'',sd:'SD7'},
+{date:'2025/5/10(日)',name:'ドラゴンマンション上義武蔵館',time:'14:00〜',type:'理事会',person:'井上（小林）',note:'',sd:'SD5'},
+{date:'2025/5/10(日)',name:'D-タリーパレス千葉パークサイドテラス',time:'10:00〜',type:'工事説明会',person:'山中・森下',note:'',sd:''},
+{date:'2025/6/8(日)',name:'D-タリーパレス千葉パークサイドテラス',time:'10:00〜',type:'理事会',person:'',note:'',sd:''},
+{date:'2025/5/10(日)',name:'ヴィルヌーブ大宮',time:'11:00〜',type:'理事会',person:'井上',note:'',sd:'SD17'},
+{date:'2025/6/7(日)',name:'プランヴェール勝田台',time:'10:00〜',type:'理事会',person:'井上',note:'',sd:''},
+{date:'2025/5/24(日)',name:'ライオンズマンション東船橋',time:'',type:'理事会',person:'小林',note:'',sd:''},
+{date:'2025/11/8(土)',name:'ヴィルヌーブ大宮',time:'13:00〜',type:'工事説明会',person:'久保・井上',note:'',sd:''},
+{date:'2025/11/30(日)',name:'キャッスル上尾',time:'17:00〜',type:'臨時総会',person:'森下',note:'',sd:''},
+{date:'2025/12/6(土)',name:'ライオンズステーションプラザ北越谷',time:'14:00〜',type:'工事説明会',person:'森下（久保）',note:'',sd:''},
+{date:'2025/11/30(日)',name:'ファミール多摩川',time:'10:00〜',type:'理事会',person:'森下',note:'',sd:''},
+{date:'2025/11/8(土)',name:'レクセル船橋サザンフェイス',time:'11:00〜',type:'総会・工事説明',person:'森下',note:'',sd:''},
+{date:'2025/11/9(日)',name:'レクセル瑞江2',time:'10:50〜',type:'総会・工事説明',person:'井上・山中',note:'',sd:''},
+{date:'2025/11/29(土)',name:'フォレストヒルズ港南台',time:'10:00〜',type:'住民説明会',person:'小林・山中',note:'',sd:''},
+{date:'2025/11/1(土)',name:'D\'グラフォート本厚木',time:'10:00〜',type:'工事説明会',person:'小林・山中',note:'',sd:''},
+{date:'2025/11/22(土)',name:'ファミール多摩川',time:'10:00〜',type:'理事会',person:'森下',note:'',sd:''},
+{date:'2025/11/30(日)',name:'ファミール新小岩リバージュ',time:'10:00〜',type:'総会',person:'森下',note:'',sd:''},
+{date:'2025/11/30(日)',name:'フェイム本郷合南',time:'14:00〜',type:'理事会',person:'小林',note:'',sd:''},
+];
+
+// ============================================================
+// 月別サマリー（ホワイトボード左側の数値）
+// ============================================================
+let monthlySummary = [
+{year:2024,month:'10月',count:12,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2024,month:'11月',count:26,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2024,month:'12月',count:10,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2025,month:'1月', count:30,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2025,month:'2月', count:29,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2025,month:'3月', count:33,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2025,month:'4月', count:21,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2025,month:'5月', count:32,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2025,month:'6月', count:34,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2025,month:'7月', count:46,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2025,month:'8月', count:24,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2025,month:'9月', count:31,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2025,month:'10月',count:51,kaigi:140,kobemag:'30台',nashiji:'24台',note:'理事会140件 合計32件 188件'},
+{year:2025,month:'11月',count:21,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2026,month:'1月', count:33,kaigi:null,kobemag:'30台',nashiji:'22台(3台梱包)',note:'在庫あり'},
+{year:2026,month:'2月', count:31,kaigi:null,kobemag:'',nashiji:'',note:''},
+{year:2026,month:'3月', count:null,kaigi:null,kobemag:'',nashiji:'',note:'今月'},
+];
+
+// ============================================================
+// 状態
+// ============================================================
+let nextId=600, currentMonth='3月', currentView='list';
+let fPerson='ALL', fStatus='ALL', fPref='ALL', searchTerm='', sortKey='num', sortDir=1, selectedId=null;
+
+// ============================================================
+// Excel読み込み
+// ============================================================
+function setupUpload(){
+  const inp = document.getElementById('xlsxInput');
+  const zone = document.getElementById('uploadZone');
+  inp.addEventListener('change', e => {
+    const files = Array.from(e.target.files);
+    files.forEach(f => {
+      if(f.type.startsWith('image/')) analyzeImage(f);
+      else loadXLSX(f);
+    });
+  });
+  zone.addEventListener('dragover', e => {e.preventDefault(); zone.classList.add('drag');});
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag');
+    Array.from(e.dataTransfer.files).forEach(f => {
+      if(f.type.startsWith('image/')) analyzeImage(f);
+      else loadXLSX(f);
+    });
+  });
+}
+
+async function analyzeImage(file){
+  document.getElementById('uploadStatus').textContent = '🔍 AI解析中...';
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const base64 = e.target.result.split(',')[1];
+    const mediaType = file.type;
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','anthropic-version':'2023-06-01'},
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages: [{
+            role: 'user',
+            content: [
+              {type:'image', source:{type:'base64', media_type:mediaType, data:base64}},
+              {type:'text', text:`このホワイトボードの問合せ・見積依頼リストを読み取り、以下のJSON形式のみで返してください。余分なテキスト不要。
+{"month":"X月","year":2026,"records":[{"num":1,"name":"物件名","prefecture":"東京都","client":"依頼元","sd":"SD6","person":"担当者","status":"対応中","note":""}]}
+都道府県は物件名・地名から推測。ステータスは「済」か「対応中」。`}
+            ]
+          }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || '';
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if(jsonMatch){
+        const parsed = JSON.parse(jsonMatch[0]);
+        if(parsed.records && parsed.records.length > 0){
+          const newRecs = parsed.records.map((r,i) => ({
+            id: nextId++, year: parsed.year||2026, month: parsed.month||'3月',
+            num: r.num||i+1, name: r.name||'', prefecture: r.prefecture||'',
+            client: r.client||'', sd: r.sd||'', person: r.person||'',
+            status: r.status||'対応中', note: r.note||''
+          }));
+          // 同じ月のデータを置き換え
+          const mo = parsed.month;
+          const yr = parsed.year||2026;
+          records = records.filter(r => !(r.month===mo && r.year===yr));
+          records = records.concat(newRecs);
+          document.getElementById('uploadStatus').textContent = `✓ ${parsed.year}年${parsed.month} ${newRecs.length}件読込`;
+          currentMonth = parsed.month;
+          render();
+        }
+      }
+    } catch(err){
+      document.getElementById('uploadStatus').textContent = '⚠ 解析エラー';
+      console.error(err);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function loadXLSX(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      
+      // シート1: 物件リスト
+      const ws1 = wb.Sheets['物件リスト'];
+      if(ws1){
+        const data = XLSX.utils.sheet_to_json(ws1, {header:1, defval:''});
+        const newRecords = [];
+        for(let i=2; i<data.length; i++){
+          const r = data[i];
+          if(!r[3]) continue; // 物件名なし行スキップ
+          newRecords.push({
+            id: nextId++,
+            year: +r[0]||2026, month: String(r[1]||''), num: +r[2]||i-1,
+            name: String(r[3]||''), prefecture: String(r[4]||''),
+            hp_flag: String(r[5]||''),
+            saiken: ['○','〇','✓','o','O'].includes(String(r[6]||'').trim()),
+            client: (String(r[5]||'').trim()==='○'?'HP:':'')+String(r[7]||''),
+            sd: String(r[8]||''),
+            person: String(r[9]||''), status: String(r[10]||'対応中'),
+            note: String(r[11]||'')
+          });
+        }
+        if(newRecords.length > 0){
+          records = newRecords;
+          document.getElementById('uploadStatus').textContent = `✓ ${newRecords.length}件読込`;
+        }
+      }
+
+      // シート2: 理事会・総会
+      const ws2 = wb.Sheets['理事会・総会スケジュール'];
+      if(ws2){
+        const data2 = XLSX.utils.sheet_to_json(ws2, {header:1, defval:''});
+        const newSch = [];
+        for(let i=2; i<data2.length; i++){
+          const r = data2[i];
+          if(!r[0]) continue;
+          newSch.push({date:String(r[0]),name:String(r[1]||''),time:String(r[2]||''),type:String(r[3]||''),person:String(r[4]||''),note:String(r[5]||''),sd:String(r[6]||'')});
+        }
+        if(newSch.length > 0) schedules = newSch;
+      }
+
+      // シート3: 月別サマリー
+      const ws3 = wb.Sheets['月別サマリー'];
+      if(ws3){
+        const data3 = XLSX.utils.sheet_to_json(ws3, {header:1, defval:''});
+        const newSum = [];
+        for(let i=2; i<data3.length; i++){
+          const r = data3[i];
+          if(!r[1]) continue;
+          newSum.push({year:+r[0]||2025,month:String(r[1]),count:r[2]||null,kaigi:r[3]||null,kobemag:String(r[4]||''),nashiji:String(r[5]||''),note:String(r[6]||'')});
+        }
+        if(newSum.length > 0) monthlySummary = newSum;
+      }
+
+      render();
+    } catch(err){
+      document.getElementById('uploadStatus').textContent = '⚠ 読込エラー';
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ============================================================
+// VIEW切替
+// ============================================================
+function switchView(v){
+  currentView = v;
+  document.querySelectorAll('.vtab').forEach((t,i)=>t.classList.toggle('active',['list','schedule','summary'][i]===v));
+  document.getElementById('viewList').style.display = v==='list'?'flex':'none';
+  document.getElementById('viewList').style.flexDirection = 'column';
+  document.getElementById('viewList').style.gap = '12px';
+  document.getElementById('viewSchedule').style.display = v==='schedule'?'flex':'none';
+  document.getElementById('viewSchedule').style.flexDirection = 'column';
+  document.getElementById('viewSchedule').style.gap = '12px';
+  document.getElementById('viewSummary').style.display = v==='summary'?'flex':'none';
+  document.getElementById('viewSummary').style.flexDirection = 'column';
+  document.getElementById('viewSummary').style.gap = '12px';
+  // month tabs only for list
+  document.getElementById('monthTabs').style.display = v==='list'?'flex':'none';
+  render();
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function getFiltered(){
+  return records.filter(r=>{
+    if(r.month!==currentMonth) return false;
+    if(fPerson!=='ALL'&&!r.person.includes(fPerson)) return false;
+    if(fStatus!=='ALL'&&r.status!==fStatus) return false;
+    if(fPref!=='ALL'&&r.prefecture!==fPref) return false;
+    if(searchTerm&&![r.name,r.person,r.client,r.prefecture].some(s=>(s||'').includes(searchTerm))) return false;
+    return true;
+  }).sort((a,b)=>{
+    let av=a[sortKey],bv=b[sortKey];
+    if(sortKey==='num'){av=+av||0;bv=+bv||0;}
+    return av<bv?-sortDir:av>bv?sortDir:0;
+  });
+}
+function pc(p){if(!p)return'p4';if(p.includes('森下'))return'p0';if(p.includes('小林'))return'p1';if(p.includes('井上'))return'p2';if(p.includes('中村'))return'p3';return'p4';}
+
+function render(){
+  const year = MY[currentMonth]||2026;
+  document.getElementById('yearChip').textContent = year+'年';
+
+  // Month tabs
+  document.getElementById('monthTabs').innerHTML = MONTH_ORDER.map(m=>{
+    const y=MY[m]||2026;
+    return`<button class="mtab${m===currentMonth?' active':''}${y===2025?' y25':''}" onclick="setMonth('${m}')">${m}</button>`;
+  }).join('');
+
+  const mr = records.filter(r=>r.month===currentMonth);
+  const zumi = mr.filter(r=>r.status==='済').length;
+  document.getElementById('kpiTotal').innerHTML = mr.length+'<span>件</span>';
+  document.getElementById('kpiSub').textContent = `済 ${zumi} / 残 ${mr.length-zumi}`;
+  document.getElementById('kpiProg').style.width = mr.length?(zumi/mr.length*100)+'%':'0%';
+  document.getElementById('kpiSch').innerHTML = schedules.length+'<span>件</span>';
+
+  // Month summary sidebar
+  const maxCnt = Math.max(...monthlySummary.filter(s=>s.count).map(s=>s.count));
+  document.getElementById('monthSummaryList').innerHTML = monthlySummary.filter(s=>s.count).slice(-10).map(s=>`
+    <div class="ms-row${s.month===currentMonth&&s.year===year?' active':''}" onclick="setMonth('${s.month}')">
+      <span class="ms-label">${s.year%100}/${s.month}</span>
+      <div class="ms-bar-wrap"><div class="ms-bar" style="width:${(s.count/maxCnt*100).toFixed(0)}%"></div></div>
+      <span class="ms-cnt">${s.count}</span>
+    </div>`).join('');
+
+  // Person filter
+  document.getElementById('personFilter').innerHTML = ['ALL','森下','小林','井上','中村'].map(p=>{
+    const cnt=p==='ALL'?mr.length:mr.filter(r=>r.person.includes(p)).length;
+    return`<button class="fbtn${fPerson===p?' active':''}" onclick="setPerson('${p}')">${p==='ALL'?'すべて':p}<span class="cnt">${cnt}</span></button>`;
+  }).join('');
+
+  // Status filter
+  document.getElementById('statusFilter').innerHTML = ['ALL','対応中','済','新規'].map(s=>{
+    const cnt=s==='ALL'?mr.length:mr.filter(r=>r.status===s).length;
+    return`<button class="fbtn${fStatus===s?' active':''}" onclick="setFStatus('${s}')">${s==='ALL'?'すべて':s}<span class="cnt">${cnt}</span></button>`;
+  }).join('');
+
+  // Pref filter
+  const pc2={};mr.forEach(r=>{if(r.prefecture)pc2[r.prefecture]=(pc2[r.prefecture]||0)+1;});
+  document.getElementById('prefFilter').innerHTML = [['ALL','すべて'],...Object.entries(pc2).sort((a,b)=>b[1]-a[1]).slice(0,7).map(e=>[e[0],e[0]])].map(([v,l])=>{
+    const cnt=v==='ALL'?mr.length:mr.filter(r=>r.prefecture===v).length;
+    return`<button class="fbtn${fPref===v?' active':''}" onclick="setPref('${v}')">${l}<span class="cnt">${cnt}</span></button>`;
+  }).join('');
+
+  if(currentView==='list') renderList();
+  else if(currentView==='schedule') renderSchedule();
+  else renderSummary();
+  updateHpCounter();
+}
+
+function renderList(){
+  const filtered = getFiltered();
+  document.getElementById('toolbarTitle').textContent = `${MY[currentMonth]||2026}年${currentMonth} 問合せ・見積依頼`;
+  document.getElementById('toolbarCount').textContent = filtered.length+'件';
+  const tbody=document.getElementById('tableBody');
+  const empty=document.getElementById('emptyMsg');
+  if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=filtered.map(r=>{
+    const sb = r.status==='済'
+      ? '<span class="badge b-済">済</span>'
+      : r.status==='新規'
+      ? '<span class="badge b-new">新規</span>'
+      : '<span class="badge b-pending">対応中</span>';
+    const pref = r.prefecture
+      ? `<span class="pref-c">${r.prefecture}</span>`
+      : '<span style="color:var(--dim)">—</span>';
+    const hp = isHpClient(r.client, r.name);
+    const re = isReSaiken(r.name, r.saiken);
+    const hpBadge = hp
+      ? `<span onclick="event.stopPropagation();playCharin(1)" style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;background:rgba(255,209,102,.2);color:#ffd166;border:1px solid rgba(255,209,102,.35);cursor:pointer;user-select:none" title="チャリーン🪙">HP 🪙</span>`
+      : '';
+    const reBadge = re
+      ? '<span style="display:inline-flex;align-items:center;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;background:rgba(160,120,255,.2);color:#c084fc;border:1px solid rgba(160,120,255,.35)">再見積</span>'
+      : '';
+    const clientLabel = hp
+      ? (r.client||'').replace(/^HP:?/i,'').trim() || '直接'
+      : (r.client||'—');
+    const rowBorder = re ? 'border-left:3px solid rgba(160,120,255,.4)' : '';
+    return `<tr class="${r.id===selectedId?'sel':''}" style="${rowBorder}" onclick="selectRow(${r.id})">
+      <td class="num-c">${String(r.num).padStart(2,'0')}</td>
+      <td style="font-weight:500">${r.name}</td>
+      <td>${pref}</td>
+      <td>${hpBadge}</td>
+      <td>${reBadge}</td>
+      <td style="color:var(--muted);font-size:11px">${clientLabel}</td>
+      <td><span class="sd-c">${r.sd||'—'}</span></td>
+      <td><span class="p-chip ${pc(r.person)}">${r.person||'—'}</span></td>
+      <td>${sb}</td>
+      <td style="color:var(--muted);font-size:10px">${r.note||''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderSchedule(){
+  const typeClass = t => {
+    if(t.includes('理事会')) return 's-理事会';
+    if(t.includes('総会')) return 's-総会';
+    if(t.includes('工事説明')) return 's-工事説明会';
+    if(t.includes('住民説明')) return 's-住民説明会';
+    return 's-other';
+  };
+
+  // 日付文字列をDateに変換（例: "2026/3/15(日)"）
+  const parseDate = str => {
+    const m = str.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+    return m ? new Date(+m[1], +m[2]-1, +m[3]) : new Date(9999,0,1);
+  };
+
+  // 今週末（土曜・日曜）の判定
+  const today = new Date(2026, 2, 11); // 2026/3/11 (水)
+  const dayOfWeek = today.getDay(); // 3=水
+  const thisSat = new Date(today); thisSat.setDate(today.getDate() + (6 - dayOfWeek));
+  const thisSun = new Date(today); thisSun.setDate(today.getDate() + (7 - dayOfWeek));
+  const isThisWeekend = d => {
+    return (d.getFullYear()===thisSat.getFullYear() && d.getMonth()===thisSat.getMonth() && d.getDate()===thisSat.getDate()) ||
+           (d.getFullYear()===thisSun.getFullYear() && d.getMonth()===thisSun.getMonth() && d.getDate()===thisSun.getDate());
+  };
+  const isPast = d => d < today;
+
+  // 新しい順にソート
+  const sorted = [...schedules].sort((a,b) => parseDate(b.date) - parseDate(a.date));
+
+  document.getElementById('schCount').textContent = sorted.length+'件';
+  const empty=document.getElementById('schEmpty');
+  const tbody=document.getElementById('schBody');
+  if(!sorted.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+
+  tbody.innerHTML = sorted.map(s=>{
+    const d = parseDate(s.date);
+    const weekend = isThisWeekend(d);
+    const past = isPast(d);
+    const rowStyle = weekend
+      ? 'background:rgba(255,209,102,.08);border-left:3px solid #ffd166;'
+      : past ? 'opacity:.55;' : '';
+    const dateMark = weekend ? '🔔 ' : '';
+    const dateStyle = weekend
+      ? 'font-weight:700;color:#ffd166;'
+      : past ? 'color:var(--dim);' : 'color:var(--muted);';
+    return`<tr style="${rowStyle}">
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;white-space:nowrap;${dateStyle}">${dateMark}${s.date}</td>
+      <td style="font-weight:500">${s.name}</td>
+      <td style="color:var(--muted);font-size:11px">${s.time}</td>
+      <td><span class="sch-type ${typeClass(s.type)}">${s.type}</span></td>
+      <td><span class="p-chip ${pc(s.person)}">${s.person||'—'}</span></td>
+      <td style="color:var(--muted);font-size:11px">${s.note||''}</td>
+      <td><span class="sd-c">${s.sd||'—'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+
+function renderSummary(){
+  const getPeriod = (year, month) => {
+    const m = parseInt(month);
+    const periodStart = m >= 4 ? year : year - 1;
+    const BASE_YEAR = 1994;
+    return periodStart - BASE_YEAR;
+  };
+
+  const CURRENT_YEAR = 2026;
+  const CURRENT_MONTH = '3月';
+
+  const merged = monthlySummary.map(s => {
+    const isCurrent = s.year === CURRENT_YEAR && s.month === CURRENT_MONTH;
+    const period = getPeriod(s.year, s.month);
+    if(isCurrent){
+      const live = records.filter(r => r.year === s.year && r.month === s.month).length;
+      return {...s, isLive: true, count: live, period};
+    }
+    return {...s, isLive: false, period};
+  });
+
+  const maxC = Math.max(...merged.filter(s=>s.count).map(s=>s.count));
+  const totalAll = merged.reduce((a,s)=>a+(s.count||0),0);
+  const total26 = merged.filter(s=>s.year===2026).reduce((a,s)=>a+(s.count||0),0);
+  const topMonth = merged.find(s=>s.count===maxC)||{};
+
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="sum-card"><div class="sum-card-title">累計件数（全期間）</div><div class="sum-big">${totalAll}<span>件</span></div><div class="sum-sub">今月はLIVE集計、過去月はホワイトボード値</div></div>
+    <div class="sum-card"><div class="sum-card-title">2026年 合計（31期）</div><div class="sum-big">${total26}<span>件</span></div></div>
+    <div class="sum-card"><div class="sum-card-title">最多月</div><div class="sum-big">${maxC}<span>件</span></div><div class="sum-sub">${topMonth.month||''}（${topMonth.year||''}）</div></div>
+    <div class="sum-card"><div class="sum-card-title">理事会・総会</div><div class="sum-big">${schedules.length}<span>件</span></div><div class="sum-sub">登録スケジュール数</div></div>
+  `;
+
+  document.getElementById('summaryBody').innerHTML = [...merged].reverse().map(s=>{
+    const liveBadge = s.isLive ? '<span style="font-size:9px;font-weight:700;color:var(--accent2);margin-left:4px">● LIVE</span>' : '';
+    const barColor = s.isLive ? 'var(--accent2)' : 'var(--accent)';
+    const textColor = s.isLive ? 'var(--accent2)' : 'var(--accent)';
+    const bar = s.count
+      ? `<div style="display:flex;align-items:center;gap:6px"><strong style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:${textColor}">${s.count}</strong>${liveBadge}<div style="height:4px;width:${(s.count/maxC*80).toFixed(0)}px;background:${barColor};border-radius:2px;display:inline-block;opacity:.8"></div></div>`
+      : '—';
+    const periodBadge = `<span style="display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:700;background:rgba(110,86,207,.15);color:#a78bfa">第${s.period}期</span>`;
+    return`<tr style="${s.isLive?'background:rgba(0,201,167,.04)':''}">
+      <td>${periodBadge}</td>
+      <td style="color:var(--muted);font-size:11px">${s.year}</td>
+      <td style="font-weight:600">${s.month}</td>
+      <td>${bar}</td>
+      <td style="color:var(--muted)">${s.kaigi||'—'}</td>
+      <td style="font-size:11px">${s.kobemag||''}</td>
+      <td style="font-size:11px">${s.nashiji||''}</td>
+      <td style="color:var(--muted);font-size:11px">${s.note||''}</td>
+    </tr>`;
+  }).join('');
+}
+
+
+function setMonth(m){currentMonth=m;fPerson='ALL';fStatus='ALL';fPref='ALL';render();}
+function setPerson(p){fPerson=p;render();}
+function setFStatus(s){fStatus=s;render();}
+function setPref(p){fPref=p;render();}
+function sortBy(k){if(sortKey===k)sortDir=-sortDir;else{sortKey=k;sortDir=1;}renderList();}
+document.getElementById('searchInput').addEventListener('input',e=>{searchTerm=e.target.value;renderList();});
+
+function selectRow(id){
+  selectedId=id;const r=records.find(x=>x.id===id);if(!r)return;
+  document.getElementById('dMeta').textContent=`${r.year}年${r.month} #${String(r.num).padStart(2,'0')}`;
+  document.getElementById('dName').textContent=r.name;
+  document.getElementById('dPref').textContent=r.prefecture||'（都道府県未設定）';
+  document.getElementById('dNotes').value=r.note||'';
+  document.getElementById('dRows').innerHTML=[['依頼元',r.client||'—'],['担当者',r.person||'—'],['SD台数',r.sd||'—'],['状況',r.status]].map(([k,v])=>`<div class="dp-row"><span class="dp-key">${k}</span><span class="dp-val">${v}</span></div>`).join('');
+  document.getElementById('sBtn1').className='sbtn'+(r.status==='対応中'?' a-対':'');
+  document.getElementById('sBtn2').className='sbtn'+(r.status==='済'?' a-済':'');
+  document.getElementById('detailPanel').classList.add('open');
+  renderList();
+}
+function closeDetail(){document.getElementById('detailPanel').classList.remove('open');selectedId=null;renderList();}
+function saveNote(){const r=records.find(x=>x.id===selectedId);if(r){r.note=document.getElementById('dNotes').value;renderList();}}
+function setStatusBtn(s){const r=records.find(x=>x.id===selectedId);if(r){r.status=s;selectRow(selectedId);}}
+
+function openModal(){document.getElementById('modalOv').classList.add('open');}
+function closeModal(){document.getElementById('modalOv').classList.remove('open');}
+document.getElementById('modalOv').addEventListener('click',e=>{if(e.target===document.getElementById('modalOv'))closeModal();});
+
+function addRecord(){
+  const name=document.getElementById('fName').value.trim();if(!name){alert('物件名を入力してください');return;}
+  const month=document.getElementById('fMonth').value,year=+document.getElementById('fYear').value;
+  const mr2=records.filter(r=>r.month===month);const maxN=mr2.length?Math.max(...mr2.map(r=>+r.num||0)):0;
+  records.push({id:nextId++,year,month,num:maxN+1,name,prefecture:document.getElementById('fPref').value.trim(),client:document.getElementById('fClient').value.trim(),sd:document.getElementById('fSd').value.trim(),person:document.getElementById('fPerson').value,status:document.getElementById('fStatus').value,note:''});
+  currentMonth=month;closeModal();['fName','fPref','fClient','fSd'].forEach(id=>document.getElementById(id).value='');render();
+}
+
+function exportXLSX(){
+  const year = MY[currentMonth]||2026;
+  const wb = XLSX.utils.book_new();
+
+  // --- 全月分を1シートに ---
+  const allData = [
+    ['年','月','#','物件名','都道府県','HP','再見積','依頼元','SD台数','担当者','ステータス','メモ・備考']
+  ];
+  const monthOrder = ['3月','2月','11月','10月','6月','5月'];
+  monthOrder.forEach(mo => {
+    const yr = MY[mo]||2026;
+    records.filter(r=>r.month===mo&&r.year===yr).sort((a,b)=>a.num-b.num).forEach(r=>{
+      allData.push([
+        r.year, r.month, r.num, r.name, r.prefecture||'',
+        isHpClient(r.client,r.name)?'○':'',
+        r.saiken?'○':'',
+        isHpClient(r.client,r.name)?(r.client||'').replace(/^HP:?/i,'').trim():r.client||'',
+        r.sd||'', r.person||'', r.status||'', r.note||''
+      ]);
+    });
+  });
+  const ws = XLSX.utils.aoa_to_sheet(allData);
+  ws['!cols'] = [6,6,5,40,10,6,7,22,12,10,8,28].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws, '物件リスト');
+
+  // --- 理事会・総会シート ---
+  const schData = [['日付','物件名','時刻','種別','担当者','備考','SD']];
+  schedules.forEach(s=>schData.push([s.date,s.name,s.time,s.type,s.person,s.note,s.sd]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(schData), '理事会・総会スケジュール');
+
+  // --- 月別サマリーシート ---
+  const sumData = [['年','月','問合せ件数','理事会・総会','在庫KOBEMAG','在庫梨地','備考']];
+  monthlySummary.forEach(s=>sumData.push([s.year,s.month,s.count||'',s.kaigi||'',s.kobemag||'',s.nashiji||'',s.note||'']));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sumData), '月別サマリー');
+
+  const fname = `GOURIKI_物件管理_${year}年${currentMonth}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+
+// ============================================================
+// HP問い合わせ集計
+// ============================================================
+let prevHpCount = 0;
+
+function isReSaiken(name, saiken){
+  return saiken === true;
+}
+
+function isHpClient(client, name){
+  const c = (client||'').toUpperCase();
+  const n = (name||'').toUpperCase();
+  return c.startsWith('HP') || n.includes('(HP)') || n.includes('（HP）');
+}
+
+function updateHpCounter(){
+  const yr = MY[currentMonth]||2026;
+  const hpRecs = records.filter(r => r.year===yr && r.month===currentMonth && isHpClient(r.client, r.name));
+  const cnt = hpRecs.length;
+
+  document.getElementById('hpCount').textContent = cnt;
+
+  // コイン表示
+  const coins = cnt > 0 ? '🪙'.repeat(Math.min(cnt, 8)) : '';
+  document.getElementById('hpCoins').textContent = coins;
+
+  // 増えたらチャリーン！
+  if(cnt > prevHpCount && prevHpCount > 0){
+    playCharin(cnt - prevHpCount);
+  }
+  prevHpCount = cnt;
+}
+
+function playCharin(times){
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if(!AudioCtx) return;
+  const ctx = new AudioCtx();
+
+  function happyCoin(startTime){
+    const master = ctx.createGain();
+    master.connect(ctx.destination);
+
+    // ドレミ風に上昇する3音（うれしい！）
+    const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+    notes.forEach((freq, i) => {
+      const t = startTime + i * 0.07;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(master);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.15, t + 0.12); // ★上がる！
+      g.gain.setValueAtTime(0.0, t);
+      g.gain.linearRampToValueAtTime(0.28, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      osc.start(t); osc.stop(t + 0.35);
+    });
+
+    // キラキラ感（高音の輝き）
+    const sparkle = ctx.createOscillator();
+    const sparkleG = ctx.createGain();
+    sparkle.connect(sparkleG); sparkleG.connect(master);
+    sparkle.type = 'sine';
+    sparkle.frequency.setValueAtTime(2800, startTime + 0.18);
+    sparkle.frequency.linearRampToValueAtTime(3800, startTime + 0.45); // ★さらに上へ
+    sparkleG.gain.setValueAtTime(0.0, startTime + 0.18);
+    sparkleG.gain.linearRampToValueAtTime(0.15, startTime + 0.22);
+    sparkleG.gain.exponentialRampToValueAtTime(0.001, startTime + 0.55);
+    sparkle.start(startTime + 0.18); sparkle.stop(startTime + 0.55);
+
+    // ポーンとした弾む感じ
+    const bounce = ctx.createOscillator();
+    const bounceG = ctx.createGain();
+    bounce.connect(bounceG); bounceG.connect(master);
+    bounce.type = 'sine';
+    bounce.frequency.setValueAtTime(400, startTime);
+    bounce.frequency.exponentialRampToValueAtTime(900, startTime + 0.08); // ★ポーン↑
+    bounceG.gain.setValueAtTime(0.22, startTime);
+    bounceG.gain.exponentialRampToValueAtTime(0.001, startTime + 0.18);
+    bounce.start(startTime); bounce.stop(startTime + 0.18);
+  }
+
+  const n = Math.min(times, 3);
+  for(let i=0; i<n; i++){
+    happyCoin(ctx.currentTime + i * 0.32);
+  }
+}
+
+function showHpList(){
+  const yr = MY[currentMonth]||2026;
+  const hpRecs = records.filter(r => r.year===yr && r.month===currentMonth && isHpClient(r.client, r.name));
+  const allHp = records.filter(r => isHpClient(r.client, r.name));
+
+  // 今月分
+  let html = `<div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--dim);margin-bottom:8px;text-transform:uppercase">${yr}年${currentMonth}（${hpRecs.length}件）</div>`;
+  hpRecs.forEach(r=>{
+    const src = (r.client||'').replace(/^HP:?/i,'').trim()||'直接';
+    html += `<div class="hp-row">
+      <span class="hp-tag">HP</span>
+      <span style="flex:1;font-weight:500">${r.name}</span>
+      <span style="color:var(--muted);font-size:11px">${r.prefecture||''}</span>
+      <span style="color:var(--accent2);font-size:11px">${src}</span>
+      <span class="p-chip ${pc(r.person)}">${r.person||'—'}</span>
+    </div>`;
+  });
+
+  // 全期間集計
+  const total = allHp.length;
+  const byMonth = {};
+  allHp.forEach(r=>{ const k=`${r.year}/${r.month}`; byMonth[k]=(byMonth[k]||0)+1; });
+  html += `<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--dim);margin-bottom:8px;text-transform:uppercase">全期間HP問い合わせ合計：${total}件</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${Object.entries(byMonth).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,v])=>`<span style="background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.25);border-radius:4px;padding:3px 9px;font-size:11px"><span style="color:#ffd166;font-weight:700">${v}</span><span style="color:var(--muted);font-size:10px"> ${k}</span></span>`).join('')}
+    </div>
+  </div>`;
+
+  document.getElementById('hpModalBody').innerHTML = html;
+  document.getElementById('hpModalOv').classList.add('open');
+}
+
+document.addEventListener('click', e=>{
+  if(e.target===document.getElementById('hpModalOv')) document.getElementById('hpModalOv').classList.remove('open');
+});
+
+// ============================================================
+// INIT
+// ============================================================
+
+// モバイル用フィルター
+function setMobileMonth(el, mo){
+  document.querySelectorAll('.mobile-filter-bar .fbtn').forEach(b=>{
+    if(['3月','2月','11月','10月','6月','5月'].some(m=>b.textContent===m)) b.classList.remove('active');
+  });
+  el.classList.add('active');
+  setMonth(mo);
+}
+function setMobilePerson(el, p){
+  ['mf-all','mf-mor','mf-kob','mf-ino','mf-nak'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.classList.remove('active');
+  });
+  el.classList.add('active');
+  setPerson(p);
+}
+
+setupUpload();
+switchView('list');
+</script>
+</body>
+</html>
